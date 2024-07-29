@@ -14,3 +14,6 @@ class EmployeeSerializer(serializers.ModelSerializer):
         # Hash the password before saving the user
         validated_data["password"] = make_password(validated_data["password"])
         return super(EmployeeSerializer, self).create(validated_data)
+
+    def get_full_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}"
