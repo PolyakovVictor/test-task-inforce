@@ -48,7 +48,9 @@ class VoteViewSet(viewsets.ModelViewSet):
             )
 
         # Create the vote
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save(employee=employee)
 
