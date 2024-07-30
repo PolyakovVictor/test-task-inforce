@@ -5,6 +5,7 @@ from .models import Restaurant, Menu, Vote
 from .serializers import RestaurantSerializer, MenuSerializer, VoteSerializer
 from rest_framework.decorators import action
 from django.db.models import Count
+from rest_framework.exceptions import ValidationError
 
 
 class RestaurantViewSet(viewsets.ModelViewSet):
@@ -36,12 +37,17 @@ class VoteViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        # Override create to ensure an employee can only vote once per menu
         employee = request.user
         menu_id = request.data.get("menu")
 
+        # Validate menu ID
+        try:
+            menu = Menu.objects.get(pk=menu_id)
+        except Menu.DoesNotExist:
+            raise ValidationError({"menu": "This menu does not exist."})
+
         # Check if the employee has already voted for this menu
-        if Vote.objects.filter(employee=employee, menu_id=menu_id).exists():
+        if Vote.objects.filter(employee=employee, menu=menu).exists():
             return Response(
                 {"detail": "You have already voted for this menu."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -52,7 +58,7 @@ class VoteViewSet(viewsets.ModelViewSet):
             data=request.data, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(employee=employee)
+        serializer.save(employee=employee, menu=menu)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
